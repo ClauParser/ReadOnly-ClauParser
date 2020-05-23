@@ -29,6 +29,8 @@ namespace wiz {
 		for (Node* x : else_list) {
 			delete x;
 		}
+		
+		else_list.clear();
 	}
 
 
