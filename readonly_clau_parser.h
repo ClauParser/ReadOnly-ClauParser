@@ -797,7 +797,7 @@ namespace wiz {
 		}
 
 		void SetLast(Node* x) {
-			this->first->last = x;
+			this->last = x;
 		}
 		void SetFirst(Node* x) {
 			this->first = x;
@@ -806,7 +806,7 @@ namespace wiz {
 			this->child = x;
 		}
 		void SetParent(Node* x) {
-			this->first->parent = x;
+			this->parent = x;
 		}
 
 		// usertype
@@ -981,32 +981,33 @@ namespace wiz {
 							if (x) {
 								x->SetLast(last);
 							}
-							if (x) {
-								x->SetFirst(x);
-								_next->Link(x);
-								_ut->SetChild(nullptr);
-							}
+						}
+						if (x) {
+							x->SetFirst(x);
+							_next->Link(x);
+							_ut->SetChild(nullptr);
 						}
 					}
-
-					ut = ut->GetParent();
-					next = next->GetParent();
+				}
 
 
-					if (next && ut) {
-						//
+				ut = ut->GetParent();
+				next = next->GetParent();
+
+
+				if (next && ut) {
+					//
+				}
+				else {
+					// right_depth > left_depth
+					if (!next && ut) {
+						return -1;
 					}
-					else {
-						// right_depth > left_depth
-						if (!next && ut) {
-							return -1;
-						}
-						else if (next && !ut) {
-							return 1;
-						}
-
-						return 0;
+					else if (next && !ut) {
+						return 1;
 					}
+
+					return 0;
 				}
 			}
 		}
@@ -1150,7 +1151,7 @@ namespace wiz {
 
 							temp->SetChild(nestedUT[0]->GetChild());
 							temp->SetParent(nestedUT[0]);
-							nestedUT[0]->GetChild()->SetParent(temp);
+							nestedUT[0]->GetChild()->GetFirst()->SetParent(temp);
 							nestedUT[0]->SetChild(temp);
 
 							braceNum++;
