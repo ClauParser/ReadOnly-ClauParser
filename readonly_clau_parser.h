@@ -760,7 +760,8 @@ namespace wiz {
 			void Clear();
 	};
 	
-
+	// Node`s parent is valid if Node`s First is Node.
+	// Node`s last is valid if Node`s First is Node.
 	class Node {
 	public:
 			
@@ -796,7 +797,7 @@ namespace wiz {
 			return this->next;
 		}
 
-		void SetLast(Node* x) {
+		void SetLast(Node* x) { // Chk GetFirst()
 			this->last = x;
 		}
 		void SetFirst(Node* x) {
@@ -805,7 +806,7 @@ namespace wiz {
 		void SetChild(Node* x) {
 			this->child = x;
 		}
-		void SetParent(Node* x) {
+		void SetParent(Node* x) { // Chk GetFirst()
 			this->parent = x;
 		}
 
