@@ -7,6 +7,9 @@
 #include <set>
 #include <stack>
 #include <string>
+
+#include <string_view>
+
 #include <list>
 
 #include <fstream>
@@ -90,6 +93,24 @@ namespace wiz {
 		}
 		return false;
 	}
+
+
+	class Utility {
+	public:
+		static long long GetIdx(long long x) {
+			return (x >> 32) & 0x00000000FFFFFFFF;
+		}
+		static long long GetLength(long long x) {
+			return (x & 0x00000000FFFFFFF8) >> 3;
+		}
+		static long long GetType(long long x) { //to enum or enum class?
+			return (x & 6) >> 1;
+		}
+
+		static bool IsToken2(long long x) {
+			return (x & 1);
+		}
+	};
 
 
 	inline int Equal(const long long x, const long long y)
@@ -199,21 +220,8 @@ namespace wiz {
 			return x;
 		}
 
-		static long long GetIdx(long long x) {
-			return (x >> 32) & 0x00000000FFFFFFFF;
-		}
-		static long long GetLength(long long x) {
-			return (x & 0x00000000FFFFFFF8) >> 3;
-		}
-		static long long GetType(long long x) { //to enum or enum class?
-			return (x & 6) >> 1;
-		}
-		static bool IsToken2(long long x) {
-			return (x & 1);
-		}
-
 		static void PrintToken(const char* buffer, long long token) {
-			std::cout << std::string(buffer + GetIdx(token), GetLength(token));
+			std::cout << std::string(buffer + Utility::GetIdx(token), Utility::GetLength(token));
 		}
 
 		static void _Scanning(char* text, long long num, const long long length,
@@ -440,10 +448,10 @@ namespace wiz {
 				for (long long j = 0; j < token_arr_size[t]; ++j) {
 					const long long i = start[t] + j;
 
-					const long long len = GetLength(tokens[i]);
-					const char ch = text[GetIdx(tokens[i])];
-					const long long idx = GetIdx(tokens[i]);
-					const bool isToken2 = IsToken2(tokens[i]);
+					const long long len = Utility::GetLength(tokens[i]);
+					const char ch = text[Utility::GetIdx(tokens[i])];
+					const long long idx = Utility::GetIdx(tokens[i]);
+					const bool isToken2 = Utility::IsToken2(tokens[i]);
 
 					if (isToken2) {
 						if (0 == state && '\"' == ch) {
@@ -461,10 +469,10 @@ namespace wiz {
 							state = 0;
 
 							{
-								long long idx = GetIdx(tokens[qouted_start]);
-								long long len = GetLength(tokens[qouted_start]);
+								long long idx = Utility::GetIdx(tokens[qouted_start]);
+								long long len = Utility::GetLength(tokens[qouted_start]);
 
-								len = GetIdx(tokens[i]) - idx + 1;
+								len = Utility::GetIdx(tokens[i]) - idx + 1;
 
 								tokens[real_token_arr_count] = Get(idx, len, text[idx], option);
 								real_token_arr_count++;
@@ -535,6 +543,14 @@ namespace wiz {
 							state = 3;
 						}
 						else if ('\"' == ch) {
+							token_last = i - 1;
+							if (token_last - token_first + 1 > 0) {
+								token_arr[token_arr_count] = Get(token_first, token_last - token_first + 1, text[token_first], option);
+								token_arr_count++;
+							}
+
+							token_first = i;
+							token_last = i;
 							state = 1;
 						}
 						else if (isWhitespace(ch) || '\0' == ch) {
@@ -599,6 +615,14 @@ namespace wiz {
 							state = 2;
 						}
 						else if ('\"' == ch) {
+							token_last = i;
+
+							token_arr[token_arr_count] = Get(token_first, token_last - token_first + 1, text[token_first], option);
+							token_arr_count++;
+
+							token_first = i + 1;
+							token_last = i + 1;
+
 							state = 0;
 						}
 					}
@@ -632,6 +656,9 @@ namespace wiz {
 		static std::pair<bool, int> Scan(FILE* inFile, const int num, const wiz::LoadDataOption& option, int thr_num,
 			char*& _buffer, long long* _buffer_len, long long*& _token_arr, long long* _token_arr_len)
 		{
+
+
+
 			if (inFile == nullptr) {
 				return { false, 0 };
 			}
@@ -711,19 +738,6 @@ namespace wiz {
 		}
 	};
 
-
-	class Utility {
-	public:
-		static long long GetIdx(long long x) {
-			return (x >> 32) & 0x00000000FFFFFFFF;
-		}
-		static long long GetLength(long long x) {
-			return (x & 0x00000000FFFFFFF8) >> 3;
-		}
-		static long long GetType(long long x) { //to enum or enum class?
-			return (x & 6) >> 1;
-		}
-	};
 	
 	class Node;
 
@@ -731,7 +745,6 @@ namespace wiz {
 	{
 		public:
 			Node* arr = nullptr;
-		//	Node static_else_list[10]; // todo - real depth in real data? < 10 ?
 			std::vector<Node*> else_list;
 			long long count = 0;
 			long long size = 0;
@@ -755,7 +768,7 @@ namespace wiz {
 		long type = 2; // 1 itemtype, 2 usertype, -1 virtual node and usertype.
 		long long name = 0;
 		long long value = 0;
-	public:
+	private:
 		Node* first = nullptr;
 		Node* last = nullptr;
 		Node* parent = nullptr;
@@ -769,6 +782,31 @@ namespace wiz {
 	public:
 		Node* GetParent() {
 			return this->first->parent;
+		}
+		Node* GetFirst() {
+			return first;
+		}
+		Node* GetLast() {
+			return this->first->last;
+		}
+		Node* GetChild() {
+			return this->child;
+		}
+		Node* GetNext() {
+			return this->next;
+		}
+
+		void SetLast(Node* x) {
+			this->first->last = x;
+		}
+		void SetFirst(Node* x) {
+			this->first = x;
+		}
+		void SetChild(Node* x) {
+			this->child = x;
+		}
+		void SetParent(Node* x) {
+			this->first->parent = x;
 		}
 
 		// usertype
@@ -855,7 +893,7 @@ namespace wiz {
 				}
 
 				if (Utility::GetLength(node->name) != 0) {
-					stream << std::string(Utility::GetIdx(node->name) + buffer, Utility::GetLength(node->name)) << " = ";
+					stream << std::string_view(Utility::GetIdx(node->name) + buffer, Utility::GetLength(node->name)) << " = ";
 				}
 				if (node->type == -1) {
 					stream << "# = { \n";
@@ -864,7 +902,7 @@ namespace wiz {
 					stream << " { \n";
 				}
 				else if (node->type == 1) {
-					stream << std::string(Utility::GetIdx(node->value) + buffer, Utility::GetLength(node->value)) << " ";
+					stream << std::string_view(Utility::GetIdx(node->value) + buffer, Utility::GetLength(node->value)) << " ";
 				}
 
 				if (node->type == -1 || node->type == 2) {
@@ -917,10 +955,10 @@ namespace wiz {
 		static int Merge(Node* next, Node* ut, Node** ut_next)
 		{
 			//check!!
-			while (ut->child
-				&& ut->child->type == -1)
+			while (ut->GetChild()
+				&& ut->GetChild()->type == -1)
 			{
-				ut = ut->child;
+				ut = ut->GetChild();
 			}
 
 			while (true) {
@@ -932,43 +970,43 @@ namespace wiz {
 				}
 
 				{
-					Node* x = _ut->child;
+					Node* x = _ut->GetChild(); // x->first == x
 					if (x) {
 						if (x->type == -1) {
-							Node* temp = x->next;
-							Node* last = x->last;
+							Node* temp = x->GetNext();
+							Node* last = x->GetLast();
 							// delete x; //
 							x = temp;
 
 							if (x) {
-								x->last = last;
+								x->SetLast(last);
+							}
+							if (x) {
+								x->SetFirst(x);
+								_next->Link(x);
+								_ut->SetChild(nullptr);
 							}
 						}
-						if (x) {
-							x->first = x;
-							_next->Link(x);
-							_ut->child = nullptr;
+					}
+
+					ut = ut->GetParent();
+					next = next->GetParent();
+
+
+					if (next && ut) {
+						//
+					}
+					else {
+						// right_depth > left_depth
+						if (!next && ut) {
+							return -1;
 						}
+						else if (next && !ut) {
+							return 1;
+						}
+
+						return 0;
 					}
-				}
-
-				ut = ut->GetParent();
-				next = next->GetParent();
-
-
-				if (next && ut) {
-					//
-				}
-				else {
-					// right_depth > left_depth
-					if (!next && ut) {
-						return -1;
-					}
-					else if (next && !ut) {
-						return 1;
-					}
-
-					return 0;
 				}
 			}
 		}
@@ -1110,10 +1148,10 @@ namespace wiz {
 							Node ut;
 							Node* temp = ut.AddVirtualNode(pool);
 
-							temp->child = nestedUT[0]->child;
-							temp->parent = nestedUT[0];
-							nestedUT[0]->child->first->parent = temp;
-							nestedUT[0]->child = temp;
+							temp->SetChild(nestedUT[0]->GetChild());
+							temp->SetParent(nestedUT[0]);
+							nestedUT[0]->GetChild()->SetParent(temp);
+							nestedUT[0]->SetChild(temp);
 
 							braceNum++;
 						}
@@ -1369,7 +1407,7 @@ namespace wiz {
 
 					// Merge
 					try { // chk empty global?
-						if (__global[0].child && __global[0].child->type == -1) {
+						if (__global[0].GetChild() && __global[0].GetChild()->type == -1) {
 							std::cout << "not valid file1\n";
 							throw 1;
 						}
