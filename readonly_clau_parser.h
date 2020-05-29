@@ -1152,7 +1152,9 @@ namespace wiz {
 
 							temp->SetChild(nestedUT[0]->GetChild());
 							temp->SetParent(nestedUT[0]);
-							nestedUT[0]->GetChild()->GetFirst()->SetParent(temp);
+							if (nestedUT[0]->GetChild()) {
+								nestedUT[0]->GetChild()->SetParent(temp);
+							}
 							nestedUT[0]->SetChild(temp);
 
 							braceNum++;
@@ -1228,8 +1230,6 @@ namespace wiz {
 
 							pTemp = nestedUT[braceNum]->AddUserTypeItem(pool, var);
 							
-
-
 							var = 0;
 							braceNum++;
 
