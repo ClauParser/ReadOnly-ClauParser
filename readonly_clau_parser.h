@@ -705,6 +705,29 @@ namespace wiz {
 						ScanningNew(buffer, file_length, thr_num, token_arr, token_arr_size, option);
 					}
 
+					std::stack<int> _stack;
+					for (long long i = 0; i < token_arr_size; ++i) {
+						if (_stack.empty() && Utility::GetType(token_arr[i]) == 2) { // right
+							delete[] buffer;
+							delete[] token_arr;
+							
+							return { false, 1 };
+						}
+						if (Utility::GetType(token_arr[i]) == 1) {
+							_stack.push(1);
+						}
+						else if (Utility::GetType(token_arr[i]) == 2) {
+							_stack.pop();
+						}
+					}
+
+					if (!_stack.empty()) {
+						delete[] buffer;
+						delete[] token_arr;
+
+						return { false, 2 };
+					}
+
 					//int b = clock();
 				//	std::cout << b - a << "ms\n";
 					_buffer = buffer;
