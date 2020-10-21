@@ -18,7 +18,7 @@
 
 #include <thread>
 
-namespace wiz {
+namespace clau_parser {
 	template <typename T>
 	inline T pos_1(const T x, const int base = 10)
 	{
@@ -200,7 +200,7 @@ namespace wiz {
 
 
 		// todo - rename.
-		static long long Get(long long position, long long length, char ch, const wiz::LoadDataOption& option) {
+		static long long Get(long long position, long long length, char ch, const clau_parser::LoadDataOption& option) {
 			long long x = (position << 32) + (length << 3) + 0;
 
 			if (length != 1) {
@@ -478,8 +478,8 @@ namespace wiz {
 								real_token_arr_count++;
 
 
-							//	PrintToken(text, tokens[real_token_arr_count - 1]);
-							//	std::cout << " ";
+								//	PrintToken(text, tokens[real_token_arr_count - 1]);
+								//	std::cout << " ";
 							}
 						}
 						else if (3 == state) {
@@ -653,7 +653,7 @@ namespace wiz {
 		}
 
 
-		static std::pair<bool, int> Scan(FILE* inFile, const int num, const wiz::LoadDataOption& option, int thr_num,
+		static std::pair<bool, int> Scan(FILE* inFile, const int num, const clau_parser::LoadDataOption& option, int thr_num,
 			char*& _buffer, long long* _buffer_len, long long*& _token_arr, long long* _token_arr_len)
 		{
 
@@ -677,7 +677,7 @@ namespace wiz {
 
 				BomType x = ReadBom(inFile);
 
-				//	wiz::Out << "length " << length << "\n";
+				//	clau_parser::Out << "length " << length << "\n";
 				if (x == BomType::UTF_8) {
 					length = length - 3;
 				}
@@ -710,7 +710,7 @@ namespace wiz {
 						if (_stack.empty() && Utility::GetType(token_arr[i]) == 2) { // right
 							delete[] buffer;
 							delete[] token_arr;
-							
+
 							return { false, 1 };
 						}
 						if (Utility::GetType(token_arr[i]) == 1) {
@@ -752,7 +752,7 @@ namespace wiz {
 		}
 		//bool end()const { return pInFile->eof(); } //
 	public:
-		bool operator() (const wiz::LoadDataOption& option, int thr_num, char*& buffer, long long* buffer_len, long long*& token_arr, long long* token_arr_len)
+		bool operator() (const clau_parser::LoadDataOption& option, int thr_num, char*& buffer, long long* buffer_len, long long*& token_arr, long long* token_arr_len)
 		{
 			bool x = Scan(pInFile, Num, option, thr_num, buffer, buffer_len, token_arr, token_arr_len).second > 0;
 
@@ -761,33 +761,33 @@ namespace wiz {
 		}
 	};
 
-	
+
 	class Node;
 
 	class MemoryPool
 	{
-		public:
-			Node* arr = nullptr;
-			std::vector<Node*> else_list;
-			long long count = 0;
-			long long size = 0;
-		public:
-			MemoryPool() {
-				else_list.reserve(10);
-			}
-		public:
-			Node* Get();
-		public:
-			virtual ~MemoryPool(); //
+	public:
+		Node* arr = nullptr;
+		std::vector<Node*> else_list;
+		long long count = 0;
+		long long size = 0;
+	public:
+		MemoryPool() {
+			else_list.reserve(10);
+		}
+	public:
+		Node* Get();
+	public:
+		virtual ~MemoryPool(); //
 
-			void Clear();
+		void Clear();
 	};
-	
+
 	// Node`s parent is valid if Node`s First is Node.
 	// Node`s last is valid if Node`s First is Node.
 	class Node {
 	public:
-			
+
 	public:
 		long type = 2; // 1 itemtype, 2 usertype, -1 virtual node and usertype.
 		long long name = 0;
@@ -873,7 +873,7 @@ namespace wiz {
 				this->child->parent = this;
 				this->child->type = 2;
 				this->child->name = var;
-				
+
 				return this->child;
 			}
 			else {
@@ -899,10 +899,10 @@ namespace wiz {
 		}
 
 		// itemtype
-		
+
 	public:
-	
-		static Node* MakeNode(MemoryPool& pool) {	
+
+		static Node* MakeNode(MemoryPool& pool) {
 			return pool.Get(); // using memory pool.
 		}
 
@@ -960,7 +960,7 @@ namespace wiz {
 		}
 	};
 
-	
+
 
 	// LoadDat
 	class LoadData
@@ -1036,55 +1036,13 @@ namespace wiz {
 			}
 		}
 
-		
+
 	private:
-		static bool __LoadData(const char* buffer, const long long* token_arr, long long token_arr_len, Node* _global, const wiz::LoadDataOption* _option,
+		static bool __LoadData(const char* buffer, const long long* token_arr, long long token_arr_len, Node* _global, Node* arr, const clau_parser::LoadDataOption* _option,
 			int start_state, int last_state, Node** next, MemoryPool* _pool) // first, strVec.empty() must be true!!
 		{
-			{
-				long long count_left = 0;
-				long long count_right = 0;
-				long long count_eq = 0;
-				long long count_other = 0; // count_other
-
-				for (long long x = 0; x < token_arr_len; ++x) {
-					switch (Utility::GetType(token_arr[x]))
-					{
-					case 0:
-						count_other++;
-						break;
-					case 1:
-						count_left++;
-						break;
-					case 2:
-						count_right++;
-						break;
-					case 3:
-						count_eq++;
-						break;
-					}
-				}
-
-				// chk count_ - count_eq + count_left < 0 ? -
-				// count_ = count_other..
-				long long chkNum = count_other - count_eq + count_left;
-
-				if (count_right > count_left) { // maybe has virtual node? - support some virutal node
-					// cf) }}} {{{   right == left but, # of virtual node is 3.
-					chkNum += count_right - count_left;
-				}
-				if (chkNum < 0) {
-					_pool->arr = nullptr;
-					_pool->count = 0;
-					_pool->size = 0;
-				}
-				else {
-					_pool->arr = new Node[1 + chkNum];
-					_pool->count = 0;
-					_pool->size = 1 + chkNum;
-				}
-			}
-
+			_pool->arr = arr;
+			_pool->size = token_arr_len;
 			MemoryPool& pool = *_pool;
 
 			std::vector<long long> varVec;
@@ -1095,7 +1053,7 @@ namespace wiz {
 				return false;
 			}
 
-			const wiz::LoadDataOption& option = *_option;
+			const clau_parser::LoadDataOption& option = *_option;
 
 			int state = start_state;
 			int braceNum = 0;
@@ -1141,7 +1099,7 @@ namespace wiz {
 						{
 							pTemp = nestedUT[braceNum]->AddUserTypeItem(pool);
 						}
-						
+
 
 						braceNum++;
 
@@ -1252,7 +1210,7 @@ namespace wiz {
 							Node* pTemp;
 
 							pTemp = nestedUT[braceNum]->AddUserTypeItem(pool, var);
-							
+
 							var = 0;
 							braceNum++;
 
@@ -1310,7 +1268,7 @@ namespace wiz {
 			return true;
 		}
 
-		static long long FindDivisionPlace(const char* buffer, const long long* token_arr, long long start, long long last, const wiz::LoadDataOption& option)
+		static long long FindDivisionPlace(const char* buffer, const long long* token_arr, long long start, long long last, const clau_parser::LoadDataOption& option)
 		{
 			for (long long a = last; a >= start; --a) {
 				long long len = Utility::GetLength(token_arr[a]);
@@ -1343,7 +1301,7 @@ namespace wiz {
 			return -1;
 		}
 
-		static bool _LoadData(InFileReserver& reserver, Node* global, const wiz::LoadDataOption option, char** _buffer, std::vector<wiz::MemoryPool>* _pool, const int lex_thr_num, const int parse_num) // first, strVec.empty() must be true!!
+		static bool _LoadData(InFileReserver& reserver, Node* global, const clau_parser::LoadDataOption option, char** _buffer, Node*& _node_arr, std::vector<clau_parser::MemoryPool>* _pool, const int lex_thr_num, const int parse_num) // first, strVec.empty() must be true!!
 		{
 			const int pivot_num = parse_num - 1;
 			char* buffer = nullptr;
@@ -1351,18 +1309,37 @@ namespace wiz {
 			long long buffer_total_len;
 			long long token_arr_len = 0;
 
+
 			{
+				int a = clock();
 				bool success = reserver(option, lex_thr_num, buffer, &buffer_total_len, token_arr, &token_arr_len);
 
 				if (!success) {
+					if (buffer) {
+						delete[] buffer;
+					}
+					if (token_arr) {
+						delete[] token_arr;
+					}
 					return false;
 				}
 				if (token_arr_len <= 0) {
+					if (buffer) {
+						delete[] buffer;
+					}
+					if (token_arr) {
+						delete[] token_arr;
+					}
 					return true;
 				}
+
+				int b = clock();
+				std::cout << b - a << "ms\n";
 			}
 
-
+				
+			Node* node_arr = static_cast<Node*>(calloc(token_arr_len, sizeof(Node)));
+			
 			Node* before_next = nullptr;
 			Node _global;
 
@@ -1408,13 +1385,13 @@ namespace wiz {
 						long long _token_arr_len = idx - 0 + 1;
 
 
-						thr[0] = std::thread(__LoadData, buffer, token_arr, _token_arr_len, &__global[0], &option, 0, 0, &next[0], &pool[0]);
+						thr[0] = std::thread(__LoadData, buffer, token_arr, _token_arr_len, &__global[0], node_arr, &option, 0, 0, &next[0], &pool[0]);
 					}
 
 					for (int i = 1; i < pivots.size(); ++i) {
 						long long _token_arr_len = pivots[i] - (pivots[i - 1] + 1) + 1;
 
-						thr[i] = std::thread(__LoadData, buffer, token_arr + pivots[i - 1] + 1, _token_arr_len, &__global[i], &option, 0, 0, &next[i], &pool[i]);
+						thr[i] = std::thread(__LoadData, buffer, token_arr + pivots[i - 1] + 1, _token_arr_len, &__global[i], node_arr + pivots[i - 1] + 1, &option, 0, 0, &next[i], &pool[i]);
 
 					}
 
@@ -1422,7 +1399,7 @@ namespace wiz {
 						long long _token_arr_len = num - 1 - (pivots.back() + 1) + 1;
 
 						thr[pivots.size()] = std::thread(__LoadData, buffer, token_arr + pivots.back() + 1, _token_arr_len, &__global[pivots.size()],
-							&option, 0, 0, &next[pivots.size()], &pool[pivots.size()]);
+							node_arr + pivots.back() + 1, &option, 0, 0, &next[pivots.size()], &pool[pivots.size()]);
 					}
 
 					// wait
@@ -1440,17 +1417,7 @@ namespace wiz {
 							std::cout << "not valid file2\n";
 							throw 2;
 						}
-						
-						/*
-						SaveWizDB(__global[0], buffer, "0.txt");
-						SaveWizDB(__global[1], buffer, "1.txt");
-						SaveWizDB(__global[2], buffer, "2.txt");
-						SaveWizDB(__global[3], buffer, "3.txt");
-						SaveWizDB(__global[4], buffer, "4.txt");
-						SaveWizDB(__global[5], buffer, "5.txt");
-						SaveWizDB(__global[6], buffer, "6.txt");
-						SaveWizDB(__global[7], buffer, "7.txt");
-						*/
+
 
 						for (int i = 1; i < pivots.size() + 1; ++i) {
 							// linearly merge and error check...
@@ -1471,6 +1438,7 @@ namespace wiz {
 					catch (...) {
 						delete[] token_arr;
 						delete[] buffer;
+						free(node_arr);
 						for (auto& x : pool) {
 							x.Clear();
 						}
@@ -1486,11 +1454,12 @@ namespace wiz {
 
 			*_buffer = buffer;
 			*global = _global;
+			_node_arr = node_arr;
 
 			return true;
 		}
 	public:
-		static bool LoadDataFromFile(const std::string& fileName, Node* global, char** _buffer, std::vector<wiz::MemoryPool>* pool, int lex_thr_num = 0, int parse_num = 0) /// global should be empty
+		static bool LoadDataFromFile(const std::string& fileName, Node* global, char** _buffer, Node*& node_arr, std::vector<clau_parser::MemoryPool>* pool, int lex_thr_num = 0, int parse_num = 0) /// global should be empty
 		{
 			if (lex_thr_num <= 0) {
 				lex_thr_num = std::thread::hardware_concurrency();
@@ -1520,7 +1489,7 @@ namespace wiz {
 			try {
 
 				InFileReserver ifReserver(inFile);
-				wiz::LoadDataOption option;
+				clau_parser::LoadDataOption option;
 				option.Assignment = ('=');
 				option.Left = '{';
 				option.Right = '}';
@@ -1530,7 +1499,7 @@ namespace wiz {
 				ifReserver.Num = 1 << 19;
 				//	strVec.reserve(ifReserver.Num);
 				// cf) empty file..
-				if (false == _LoadData(ifReserver, &globalTemp, option, _buffer, pool, lex_thr_num, parse_num))
+				if (false == _LoadData(ifReserver, &globalTemp, option, _buffer, node_arr, pool, lex_thr_num, parse_num))
 				{
 					fclose(inFile);
 					return false; // return true?
@@ -1546,7 +1515,7 @@ namespace wiz {
 				pool->clear();
 				return false;
 			}
-			catch (const std::string & e) {
+			catch (const std::string& e) {
 				std::cout << e << "\n"; fclose(inFile);
 				for (auto& x : *pool) {
 					x.Clear();
@@ -1575,18 +1544,9 @@ namespace wiz {
 			*global = globalTemp;
 			return true;
 		}
-		static bool LoadWizDB(Node* global, const std::string& fileName, char** buffer, std::vector<wiz::MemoryPool>* pool, const int thr_num) {
-			Node globalTemp;
 
-			// Scan + Parse 
-			if (false == LoadDataFromFile(fileName, &globalTemp, buffer, pool, thr_num, thr_num)) { return false; }
-			//std::cout << "LoadData End" << "\n";
-
-			*global = globalTemp;
-			return true;
-		}
 		// SaveQuery
-		static bool SaveWizDB(const Node& global, char* buffer, const std::string& fileName, const bool append = false) {
+		static bool Saveclau_parserDB(const Node& global, char* buffer, const std::string& fileName, const bool append = false) {
 			std::ofstream outFile;
 			if (fileName.empty()) { return false; }
 			if (false == append) {
